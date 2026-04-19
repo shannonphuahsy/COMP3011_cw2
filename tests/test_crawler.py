@@ -1,5 +1,10 @@
-from src.crawler import Crawler
+import sys
+from pathlib import Path
 from bs4 import BeautifulSoup
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from crawler import Crawler
 
 
 def test_parse_page_removes_scripts():
@@ -22,9 +27,9 @@ def test_extract_links_internal_only():
     crawler = Crawler("https://example.com")
 
     soup = BeautifulSoup("""
-    <a href="/page1">Page 1</a>
-    <a href="https://example.com/page2">Page 2</a>
-    <a href="https://external.com/page">External</a>
+        <a href="/page1">Page 1</a>
+        <a href="https://example.com/page2">Page 2</a>
+        <a href="https://external.com/page">External</a>
     """, "html.parser")
 
     links = crawler.extract_links(soup, "https://example.com")

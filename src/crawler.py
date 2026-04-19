@@ -2,12 +2,13 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from datetime import datetime
 
 
 class Crawler:
     """
     A polite web crawler for quotes.toscrape.com.
-    Crawls pages, extracts clean text, and discovers internal links.
+    Crawls quote pages, extracts clean text, and discovers pagination links.
     """
 
     def __init__(self, base_url, delay=6):
@@ -16,16 +17,18 @@ class Crawler:
         self.visited = set()
         self.to_visit = [base_url]
 
-    def fetch_page(self, url, retries=2):
-        for attempt in range(retries):
-            try:
-                response = requests.get(url, timeout=20)
-                response.raise_for_status()
-                return response.text
-            except requests.RequestException as e:
-                print(f"[ERROR] Failed to fetch {url} (attempt {attempt + 1}): {e}")
-                time.sleep(self.delay)
-        return None
+    def timestamp(self):
+        """Return current timestamp as a readable string."""
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def fetch_page(self, url):
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            print(f"[{self.timestamp()}] [ERROR] Failed to fetch {url}: {e}")
+            return None
 
     def parse_page(self, html):
         soup = BeautifulSoup(html, "html.parser")
@@ -40,8 +43,15 @@ class Crawler:
         links = set()
 
         for a in soup.find_all("a", href=True):
-            full_url = urljoin(current_url, a["href"])
-            if full_url.startswith(self.base_url):
+            href = a["href"]
+            full_url = urljoin(current_url, href)
+
+            if (
+                full_url.startswith(self.base_url)
+                and "/page/" in full_url
+                and "/tag/" not in full_url
+                and "/author/" not in full_url
+            ):
                 links.add(full_url)
 
         return links
@@ -55,9 +65,9 @@ class Crawler:
             if url in self.visited:
                 continue
 
-            print(f"[CRAWLING] {url}")
-            html = self.fetch_page(url)
+            print(f"[{self.timestamp()}] [CRAWLING] {url}")
 
+            html = self.fetch_page(url)
             if html is None:
                 continue
 
@@ -69,6 +79,6 @@ class Crawler:
                 if link not in self.visited and link not in self.to_visit:
                     self.to_visit.append(link)
 
-            time.sleep(self.delay)  # politeness window
+            time.sleep(self.delay)
 
         return pages

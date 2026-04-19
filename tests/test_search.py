@@ -1,6 +1,11 @@
+import sys
+from pathlib import Path
 import json
 import os
-from src.search import SearchEngine
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from search import SearchEngine
 
 TEST_INDEX_FILE = "tests/test_index.json"
 
