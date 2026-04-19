@@ -5,7 +5,7 @@ INDEX_FILE = "data/index.json"
 
 class SearchEngine:
     """
-    Provides search functionality over a loaded inverted index.
+    Provides search functionality using a pre-built inverted index.
     """
 
     def __init__(self, index_file=INDEX_FILE):
@@ -29,7 +29,7 @@ class SearchEngine:
 
     def find_query(self, words):
         """
-        Find pages containing ALL words (AND search).
+        Find pages that contain ALL words in the query (AND search).
         """
         page_sets = []
 
