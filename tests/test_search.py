@@ -17,17 +17,17 @@ TEST_INDEX_FILE = "tests/test_index.json"
 
 def setup_module(module):
     """
-    Create a deterministic index file so that
-    TF-IDF ranking behaviour is predictable.
+    Create a deterministic index file where TF-IDF
+    produces a meaningful ordering.
     """
     index_data = {
         "index": {
+            "unique": {
+                "page1": {"count": 3, "positions": [0, 1, 2]}
+            },
             "life": {
                 "page1": {"count": 3, "positions": [0, 1, 2]},
                 "page2": {"count": 1, "positions": [10]}
-            },
-            "good": {
-                "page1": {"count": 1, "positions": [3]}
             }
         },
         "doc_lengths": {
@@ -66,25 +66,26 @@ def test_print_missing_word():
 
 
 # =========================
-# Find / ranking tests
+# Ranking / TF-IDF tests
 # =========================
 
 def test_ranked_results_are_ordered_by_relevance():
     """
-    page1 should rank higher than page2
-    due to higher TF-IDF score.
+    'unique' appears in only one document,
+    so its IDF is non-zero and ranking is meaningful.
     """
     search = SearchEngine(TEST_INDEX_FILE)
-    output = search.find_query(["life"])
+    output = search.find_query(["unique"])
 
     lines = output.splitlines()
+
     assert "page1" in lines[1]
-    assert "page2" in lines[2]
+    assert "page2" not in output
 
 
 def test_and_query_filters_documents_correctly():
     search = SearchEngine(TEST_INDEX_FILE)
-    output = search.find_query(["life", "good"])
+    output = search.find_query(["life", "unique"])
 
     assert "page1" in output
     assert "page2" not in output

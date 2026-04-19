@@ -2,13 +2,23 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 from bs4 import BeautifulSoup
+import requests
 
+# Allow importing from src/
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from crawler import Crawler
 
 
-def test_parse_page_removes_scripts_and_styles():
+# =========================
+# Parsing-related tests
+# =========================
+
+def test_parse_page_removes_non_visible_elements():
+    """
+    The crawler should remove script and style elements
+    and return only visible page text.
+    """
     crawler = Crawler("https://example.com")
 
     html = """
@@ -23,20 +33,28 @@ def test_parse_page_removes_scripts_and_styles():
     </html>
     """
 
-    soup, text = crawler.parse_page(html)
+    _, text = crawler.parse_page(html)
 
     assert "alert" not in text
     assert "hidden" not in text
     assert "Hello world" in text
 
 
-def test_extract_links_internal_links_only():
+# =========================
+# Link-extraction tests
+# =========================
+
+def test_extracts_only_internal_links():
+    """
+    The crawler should only keep links within
+    the same domain as the base URL.
+    """
     crawler = Crawler("https://example.com")
 
     soup = BeautifulSoup("""
-        /page1Page 1</a>
-        https://example.com/page2Page 2</a>
-        https://external.com/pageExternal</a>
+        <a href="/page1">Page 1</a>
+        <a href="https://example.com/page2">Page 2</a>
+        <a href="https://external.com/page">External</a>
     """, "html.parser")
 
     links = crawler.extract_links(soup, "https://example.com")
@@ -46,8 +64,16 @@ def test_extract_links_internal_links_only():
     assert "https://external.com/page" not in links
 
 
+# =========================
+# Network / fetching tests
+# =========================
+
 @patch("crawler.requests.get")
 def test_fetch_page_success(mock_get):
+    """
+    fetch_page should return page HTML
+    when the HTTP request succeeds.
+    """
     mock_get.return_value.status_code = 200
     mock_get.return_value.text = "<html>OK</html>"
     mock_get.return_value.raise_for_status = lambda: None
@@ -60,7 +86,11 @@ def test_fetch_page_success(mock_get):
 
 @patch("crawler.requests.get")
 def test_fetch_page_failure_returns_none(mock_get):
-    mock_get.side_effect = Exception("Network error")
+    """
+    fetch_page should fail gracefully and
+    return None when a RequestException occurs.
+    """
+    mock_get.side_effect = requests.RequestException("Network failure")
 
     crawler = Crawler("https://example.com")
     html = crawler.fetch_page("https://example.com", retries=1)
