@@ -30,7 +30,6 @@ class Crawler:
     def parse_page(self, html):
         soup = BeautifulSoup(html, "html.parser")
 
-        # Remove non-visible elements
         for tag in soup(["script", "style", "noscript"]):
             tag.decompose()
 
@@ -40,10 +39,8 @@ class Crawler:
     def extract_links(self, soup, current_url):
         links = set()
 
-        for a_tag in soup.find_all("a", href=True):
-            href = a_tag["href"]
-            full_url = urljoin(current_url, href)
-
+        for a in soup.find_all("a", href=True):
+            full_url = urljoin(current_url, a["href"])
             if full_url.startswith(self.base_url):
                 links.add(full_url)
 
@@ -68,11 +65,10 @@ class Crawler:
             pages[url] = text
             self.visited.add(url)
 
-            links = self.extract_links(soup, url)
-            for link in links:
+            for link in self.extract_links(soup, url):
                 if link not in self.visited and link not in self.to_visit:
                     self.to_visit.append(link)
 
-            time.sleep(self.delay)  # Politeness window
+            time.sleep(self.delay)  # politeness window
 
         return pages

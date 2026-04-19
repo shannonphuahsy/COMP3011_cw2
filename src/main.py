@@ -9,7 +9,6 @@ INDEX_FILE = "data/index.json"
 
 def build():
     print("Building index (this will crawl the website)...")
-
     crawler = Crawler(BASE_URL)
     pages = crawler.crawl()
 
@@ -20,10 +19,17 @@ def build():
     print("Index built and saved.")
 
 
+def load():
+    index = InvertedIndex()
+    index.load(INDEX_FILE)
+    print("Index loaded successfully.")
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python src/main.py build")
+        print("  python src/main.py load")
         print("  python src/main.py print <word>")
         print("  python src/main.py find <word1> <word2> ...")
         return
@@ -32,6 +38,9 @@ def main():
 
     if command == "build":
         build()
+
+    elif command == "load":
+        load()
 
     elif command == "print":
         if len(sys.argv) != 3:

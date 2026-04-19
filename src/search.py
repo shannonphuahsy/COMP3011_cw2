@@ -5,7 +5,7 @@ INDEX_FILE = "data/index.json"
 
 class SearchEngine:
     """
-    Provides search functionality using a pre-built inverted index.
+    Provides search functionality over a loaded inverted index.
     """
 
     def __init__(self, index_file=INDEX_FILE):
@@ -13,9 +13,6 @@ class SearchEngine:
         self.index.load(index_file)
 
     def print_word(self, word):
-        """
-        Print the inverted index entry for a single word.
-        """
         entry = self.index.get_word(word)
 
         if not entry:
@@ -28,9 +25,6 @@ class SearchEngine:
         return "\n".join(lines)
 
     def find_query(self, words):
-        """
-        Find pages that contain ALL words in the query (AND search).
-        """
         page_sets = []
 
         for word in words:
@@ -39,13 +33,11 @@ class SearchEngine:
                 return f"No pages contain all words: {' '.join(words)}"
             page_sets.append(set(entry.keys()))
 
-        matching_pages = set.intersection(*page_sets)
+        pages = set.intersection(*page_sets)
 
-        if not matching_pages:
+        if not pages:
             return f"No pages contain all words: {' '.join(words)}"
 
         lines = [f"Pages containing {' '.join(words)}:"]
-        for page in matching_pages:
-            lines.append(page)
-
+        lines.extend(pages)
         return "\n".join(lines)

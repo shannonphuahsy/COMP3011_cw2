@@ -20,9 +20,7 @@ class InvertedIndex:
         return re.findall(r"\b[a-z]+\b", text)
 
     def add_page(self, url, text):
-        tokens = self.tokenize(text)
-
-        for position, word in enumerate(tokens):
+        for position, word in enumerate(self.tokenize(text)):
             entry = self.index[word][url]
             entry["count"] += 1
             entry["positions"].append(position)
