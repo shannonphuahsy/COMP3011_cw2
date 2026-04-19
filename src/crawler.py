@@ -1,14 +1,13 @@
 import time
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-from datetime import datetime
+from urllib.parse import urljoin, urlparse
 
 
 class Crawler:
     """
     A polite web crawler for quotes.toscrape.com.
-    Crawls quote pages, extracts clean text, and discovers pagination links.
+    Crawls pages, extracts clean text, and discovers internal links.
     """
 
     def __init__(self, base_url, delay=6):
@@ -17,22 +16,27 @@ class Crawler:
         self.visited = set()
         self.to_visit = [base_url]
 
-    def timestamp(self):
-        """Return current timestamp as a readable string."""
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    def fetch_page(self, url):
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            print(f"[{self.timestamp()}] [ERROR] Failed to fetch {url}: {e}")
-            return None
+    def fetch_page(self, url, retries=2):
+        """
+        Fetch a page with basic retry logic.
+        """
+        for attempt in range(retries):
+            try:
+                response = requests.get(url, timeout=20)
+                response.raise_for_status()
+                return response.text
+            except requests.RequestException as e:
+                print(f"[ERROR] Failed to fetch {url} (attempt {attempt + 1}): {e}")
+                time.sleep(self.delay)
+        return None
 
     def parse_page(self, html):
+        """
+        Parse HTML and extract visible text.
+        """
         soup = BeautifulSoup(html, "html.parser")
 
+        # Remove non-visible elements
         for tag in soup(["script", "style", "noscript"]):
             tag.decompose()
 
@@ -40,23 +44,27 @@ class Crawler:
         return soup, text
 
     def extract_links(self, soup, current_url):
+        """
+        Extract internal links (same domain only).
+        """
         links = set()
+        base_domain = urlparse(self.base_url).netloc
 
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
+        for a_tag in soup.find_all("a", href=True):
+            href = a_tag["href"]
             full_url = urljoin(current_url, href)
 
-            if (
-                full_url.startswith(self.base_url)
-                and "/page/" in full_url
-                and "/tag/" not in full_url
-                and "/author/" not in full_url
-            ):
+            # Keep only links within the same domain
+            if urlparse(full_url).netloc == base_domain:
                 links.add(full_url)
 
         return links
 
     def crawl(self):
+        """
+        Crawl all reachable pages starting from the base URL.
+        Returns a dictionary: {url: page_text}
+        """
         pages = {}
 
         while self.to_visit:
@@ -65,9 +73,9 @@ class Crawler:
             if url in self.visited:
                 continue
 
-            print(f"[{self.timestamp()}] [CRAWLING] {url}")
-
+            print(f"[CRAWLING] {url}")
             html = self.fetch_page(url)
+
             if html is None:
                 continue
 
@@ -79,6 +87,7 @@ class Crawler:
                 if link not in self.visited and link not in self.to_visit:
                     self.to_visit.append(link)
 
+            # Politeness window
             time.sleep(self.delay)
 
         return pages
