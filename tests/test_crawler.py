@@ -17,7 +17,7 @@ from crawler import Crawler
 def test_parse_page_removes_non_visible_elements():
     """
     The crawler should remove script and style elements
-    and return only visible page text.
+    and return only visible text content.
     """
     crawler = Crawler("https://example.com")
 
@@ -46,8 +46,9 @@ def test_parse_page_removes_non_visible_elements():
 
 def test_extracts_only_internal_pagination_links():
     """
-    The crawler should extract ONLY internal pagination links
-    (matches current crawler design).
+    The crawler should extract internal pagination links:
+    - /page/<number>
+    It should ignore tag pages and external links.
     """
     crawler = Crawler("https://example.com")
 
@@ -73,7 +74,7 @@ def test_extracts_only_internal_pagination_links():
 @patch("crawler.requests.get")
 def test_fetch_page_success(mock_get):
     """
-    fetch_page should return page HTML
+    fetch_page should return HTML content
     when the HTTP request succeeds.
     """
     mock_get.return_value.status_code = 200
@@ -89,8 +90,8 @@ def test_fetch_page_success(mock_get):
 @patch("crawler.requests.get")
 def test_fetch_page_failure_returns_none(mock_get):
     """
-    fetch_page should fail gracefully and
-    return None when a RequestException occurs.
+    fetch_page should fail gracefully and return None
+    when a RequestException occurs.
     """
     mock_get.side_effect = requests.RequestException("Network failure")
 
