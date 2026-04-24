@@ -8,12 +8,7 @@ INDEX_FILE = "data/index.json"
 
 
 def build():
-    """
-    Crawl the target website, build the inverted index,
-    and save it to disk.
-    """
-    print("Building index (this will crawl the website)...")
-
+    print("Building index...")
     crawler = Crawler(BASE_URL)
     pages = crawler.crawl()
 
@@ -25,10 +20,6 @@ def build():
 
 
 def load():
-    """
-    Load a previously saved index from disk.
-    This command exists to satisfy the CLI requirement.
-    """
     index = InvertedIndex()
     index.load(INDEX_FILE)
     print("Index loaded successfully.")
@@ -37,10 +28,11 @@ def load():
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python src/main.py build")
-        print("  python src/main.py load")
-        print("  python src/main.py print <word>")
-        print("  python src/main.py find <word1> <word2> ...")
+        print("  build")
+        print("  load")
+        print("  print <word>")
+        print('  find <word1> <word2> ...')
+        print('  find "phrase query"')
         return
 
     command = sys.argv[1]
@@ -52,18 +44,18 @@ def main():
         load()
 
     elif command == "print":
-        if len(sys.argv) != 3:
-            print("Usage: python src/main.py print <word>")
-            return
         search = SearchEngine()
         print(search.print_word(sys.argv[2]))
 
     elif command == "find":
-        if len(sys.argv) < 3:
-            print("Usage: python src/main.py find <word1> <word2> ...")
-            return
         search = SearchEngine()
-        print(search.find_query(sys.argv[2:]))
+
+        if len(sys.argv) == 3 and " " in sys.argv[2]:
+            phrase = sys.argv[2].strip('"')
+            words = phrase.split()
+            print(search.find_query(words, phrase=True))
+        else:
+            print(search.find_query(sys.argv[2:]))
 
     else:
         print(f"Unknown command: {command}")
