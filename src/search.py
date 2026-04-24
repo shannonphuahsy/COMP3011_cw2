@@ -13,9 +13,8 @@ class SearchEngine:
     - Phrase search using positional indexing
     - TF-IDF ranking
 
-    Time Complexity (per query):
-    - AND search: O(sum(df_t))
-    - Phrase search: O(sum(df_t * p)) where p = average positions
+    AND search complexity: O(sum(df))
+    Phrase search complexity: O(sum(df * p))
     """
 
     def __init__(self, index_file: str = INDEX_FILE):
@@ -43,19 +42,9 @@ class SearchEngine:
         idf = self.index.idf(word)
         return tf * idf
 
-    # -------------------------
-    # Phrase search logic
-    # -------------------------
-
     def phrase_match(self, words: List[str], url: str) -> bool:
         """
-        Returns True if words occur consecutively in the given document.
-        Uses positional intersection.
-
-        Example:
-        positions("good") = [3, 10]
-        positions("friends") = [4, 11]
-        -> phrase exists
+        Returns True if words occur consecutively in a document.
         """
         positions_lists = [
             self.index.get_word(word)[url]["positions"]
@@ -65,20 +54,20 @@ class SearchEngine:
         first_positions = positions_lists[0]
 
         for pos in first_positions:
-            if all(
-                (pos + i) in positions_lists[i]
-                for i in range(1, len(words))
-            ):
+            if all((pos + i) in positions_lists[i] for i in range(1, len(words))):
                 return True
 
         return False
 
     def find_query(self, words: List[str], phrase: bool = False) -> str:
         """
-        Executes an AND or phrase query and ranks results using TF-IDF.
+        Execute AND or phrase query and rank results with TF-IDF.
+        Handles empty queries defensively.
         """
-        start_time = time.perf_counter()
+        if not words:
+            return "Empty query provided. Please enter one or more search terms."
 
+        start_time = time.perf_counter()
         words = [w.lower() for w in words]
         page_sets = []
 
@@ -93,27 +82,15 @@ class SearchEngine:
             return f"No pages contain all words: {' '.join(words)}"
 
         if phrase:
-            pages = {
-                url for url in pages
-                if self.phrase_match(words, url)
-            }
-
-        if not pages:
-            return f"No pages contain the phrase: {' '.join(words)}"
+            pages = {url for url in pages if self.phrase_match(words, url)}
+            if not pages:
+                return f"No pages contain the phrase: {' '.join(words)}"
 
         scored_pages: Dict[str, float] = {}
         for url in pages:
-            scored_pages[url] = sum(
-                self.tf_idf_score(word, url)
-                for word in words
-            )
+            scored_pages[url] = sum(self.tf_idf_score(word, url) for word in words)
 
-        ranked = sorted(
-            scored_pages.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-
+        ranked = sorted(scored_pages.items(), key=lambda x: x[1], reverse=True)
         elapsed = (time.perf_counter() - start_time) * 1000
 
         lines = [f"Results ({elapsed:.2f} ms):"]
