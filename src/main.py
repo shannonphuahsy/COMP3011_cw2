@@ -1,4 +1,5 @@
 import sys
+import time
 from crawler import Crawler
 from indexer import InvertedIndex
 from search import SearchEngine

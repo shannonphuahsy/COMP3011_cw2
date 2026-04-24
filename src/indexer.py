@@ -1,6 +1,7 @@
 import re
 import json
 import math
+import time
 from collections import defaultdict
 from typing import Dict, List
 
@@ -42,8 +43,13 @@ class InvertedIndex:
             entry["positions"].append(position)
 
     def build_from_pages(self, pages: Dict[str, str]) -> None:
+        start = time.perf_counter()
         for url, text in pages.items():
             self.add_page(url, text)
+
+        elapsed = time.perf_counter() - start
+        print(f"Indexed {self.total_docs} documents in {elapsed:.2f}s")
+
 
     def get_word(self, word: str) -> Dict:
         return self.index.get(word.lower(), {})
@@ -71,3 +77,4 @@ class InvertedIndex:
         self.index = data["index"]
         self.doc_lengths = data["doc_lengths"]
         self.total_docs = data["total_docs"]
+        

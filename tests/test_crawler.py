@@ -44,23 +44,25 @@ def test_parse_page_removes_non_visible_elements():
 # Link-extraction tests
 # =========================
 
-def test_extracts_only_internal_links():
+def test_extracts_only_internal_pagination_links():
     """
-    The crawler should only keep links within
-    the same domain as the base URL.
+    The crawler should extract ONLY internal pagination links
+    (matches current crawler design).
     """
     crawler = Crawler("https://example.com")
 
     soup = BeautifulSoup("""
-        <a href="/page1">Page 1</a>
-        <a href="https://example.com/page2">Page 2</a>
+        <a href="/page/1">Page 1</a>
+        <a href="/page/2">Page 2</a>
+        <a href="/tag/life/page/1">Tag Page</a>
         <a href="https://external.com/page">External</a>
     """, "html.parser")
 
-    links = crawler.extract_links(soup, "https://example.com")
+    links = crawler.extract_links(soup)
 
-    assert "https://example.com/page1" in links
-    assert "https://example.com/page2" in links
+    assert "https://example.com/page/1" in links
+    assert "https://example.com/page/2" in links
+    assert all("/tag/" not in link for link in links)
     assert "https://external.com/page" not in links
 
 
